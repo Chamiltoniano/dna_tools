@@ -19,6 +19,11 @@
 </head>
 <body class="section">
     <h1 class="title has-text-centered">Upload .pdb File</h1>
+    <!-- Botón para abrir modal -->
+<div class="has-text-centered mb-4">
+  <button class="button is-primary" onclick="openModal()">Generate PDB from Sequence</button>
+</div>
+
     <div id="drop-area">
         <p>Drag & Drop a .pdb file here</p>
         <input type="file" id="fileElem" accept=".pdb" style="display:none;">
@@ -28,5 +33,25 @@
     <p id="status"></p>
 
     <script src="/static/script.js"></script>
+
+    <!-- Modal -->
+<div class="modal" id="sequenceModal">
+  <div class="modal-background" onclick="closeModal()"></div>
+  <div class="modal-card">
+    <header class="modal-card-head">
+      <p class="modal-card-title">Generate PDB from Sequence</p>
+      <button class="delete" aria-label="close" onclick="closeModal()"></button>
+    </header>
+    <section class="modal-card-body">
+      <label class="label">Enter your sequence:</label>
+      <textarea class="textarea" id="sequenceInput" placeholder="e.g., ATGCGT..."></textarea>
+    </section>
+    <footer class="modal-card-foot">
+      <button class="button is-success" onclick="submitSequence()">Generate</button>
+      <button class="button" onclick="closeModal()">Cancel</button>
+    </footer>
+  </div>
+</div>
+
 </body>
 </html>

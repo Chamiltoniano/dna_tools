@@ -50,3 +50,25 @@ function handleFile(file) {
 
     xhr.send(formData);
 }
+
+
+function openModal() {
+    document.getElementById('sequenceModal').classList.add('is-active');
+}
+
+function closeModal() {
+    document.getElementById('sequenceModal').classList.remove('is-active');
+}
+
+function submitSequence() {
+    const sequence = document.getElementById('sequenceInput').value.trim();
+    if (!sequence) {
+        alert("Please enter a sequence.");
+        return;
+    }
+
+    // Aquí podrías hacer una petición AJAX al backend con la secuencia
+    console.log("Sequence submitted:", sequence);
+
+    closeModal();
+}
