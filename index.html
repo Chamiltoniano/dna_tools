@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload PDB File</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
+    <style>
+        #drop-area {
+            border: 2px dashed #00d1b2;
+            padding: 50px;
+            text-align: center;
+            color: #4a4a4a;
+            margin-top: 30px;
+        }
+        .progress {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body class="section">
+    <h1 class="title has-text-centered">Upload .pdb File</h1>
+    <div id="drop-area">
+        <p>Drag & Drop a .pdb file here</p>
+        <input type="file" id="fileElem" accept=".pdb" style="display:none;">
+        <button class="button is-info" onclick="document.getElementById('fileElem').click()">Choose File</button>
+    </div>
+    <progress id="progress-bar" class="progress is-info" value="0" max="100" style="display:none;"></progress>
+    <p id="status"></p>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
