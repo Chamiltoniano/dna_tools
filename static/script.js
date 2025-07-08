@@ -63,6 +63,7 @@ function closeModal() {
 function submitSequence() {
     const sequence = document.getElementById('sequenceInput').value.trim().toUpperCase();
     const sigma = parseFloat(document.getElementById('sigmaInput').value);
+    const topology = document.querySelector('input[name="topology"]:checked').value;
 
     if (!sequence || !/^[ATCG]+$/.test(sequence)) {
         alert("Please enter a valid DNA sequence (A, T, C, G only).");
@@ -74,14 +75,10 @@ function submitSequence() {
         return;
     }
 
-    // Mostrar carga
-    document.getElementById('progress-bar').style.display = 'block';
-    document.getElementById('status').textContent = 'Generating DNA...';
-
     fetch('/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sequence, sigma })
+        body: JSON.stringify({ sequence, sigma, topology })
     })
     .then(response => {
         if (!response.ok) throw new Error("Failed to generate PDB.");
@@ -96,17 +93,10 @@ function submitSequence() {
         document.body.appendChild(a);
         a.click();
         a.remove();
-        document.getElementById('status').textContent = 'Download ready.';
     })
     .catch(error => {
-        console.error(error);
-        document.getElementById('status').textContent = 'An error occurred.';
         alert("Error: " + error.message);
-    })
-    .finally(() => {
-        document.getElementById('progress-bar').style.display = 'none';
     });
 
     closeModal();
 }
-

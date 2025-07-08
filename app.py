@@ -3,6 +3,12 @@ import os
 import subprocess
 from datetime import datetime
 
+# Si circularizarDNA.py está presente, lo importamos
+try:
+    from circularizarDNA import circularize_pdb
+except ImportError:
+    circularize_pdb = None
+
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -27,6 +33,7 @@ def generate():
     data = request.get_json()
     sequence = data.get('sequence', '').upper()
     sigma = data.get('sigma')
+    topology = data.get('topology', 'linear')  # <- Extraemos aquí
 
     # Validaciones
     if not sequence or not all(base in 'ATCG' for base in sequence):
@@ -60,7 +67,15 @@ def generate():
     output_name = f"ADN_{timestamp}.pdb"
     os.rename("ADN_ordenado.pdb", output_name)
 
-    # Enviar archivo
+    # Circularizar si es necesario
+    if topology == "circular":
+        if circularize_pdb is None:
+            return jsonify({'error': 'Circularization script not available'}), 500
+        try:
+            circularize_pdb(output_name, output_name)  # Sobrescribe el archivo
+        except Exception as e:
+            return jsonify({'error': 'Circularization failed', 'details': str(e)}), 500
+
     return send_file(output_name, as_attachment=True)
 
 if __name__ == '__main__':
