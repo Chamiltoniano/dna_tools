@@ -61,14 +61,52 @@ function closeModal() {
 }
 
 function submitSequence() {
-    const sequence = document.getElementById('sequenceInput').value.trim();
-    if (!sequence) {
-        alert("Please enter a sequence.");
+    const sequence = document.getElementById('sequenceInput').value.trim().toUpperCase();
+    const sigma = parseFloat(document.getElementById('sigmaInput').value);
+
+    if (!sequence || !/^[ATCG]+$/.test(sequence)) {
+        alert("Please enter a valid DNA sequence (A, T, C, G only).");
         return;
     }
 
-    // Aquí podrías hacer una petición AJAX al backend con la secuencia
-    console.log("Sequence submitted:", sequence);
+    if (isNaN(sigma)) {
+        alert("Please enter a valid number for supercoiling density.");
+        return;
+    }
+
+    // Mostrar carga
+    document.getElementById('progress-bar').style.display = 'block';
+    document.getElementById('status').textContent = 'Generating DNA...';
+
+    fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sequence, sigma })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Failed to generate PDB.");
+        return response.blob();
+    })
+    .then(blob => {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ADN_${timestamp}.pdb`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        document.getElementById('status').textContent = 'Download ready.';
+    })
+    .catch(error => {
+        console.error(error);
+        document.getElementById('status').textContent = 'An error occurred.';
+        alert("Error: " + error.message);
+    })
+    .finally(() => {
+        document.getElementById('progress-bar').style.display = 'none';
+    });
 
     closeModal();
 }
+
