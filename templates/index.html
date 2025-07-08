@@ -42,10 +42,22 @@
       <p class="modal-card-title">Generate PDB from Sequence</p>
       <button class="delete" aria-label="close" onclick="closeModal()"></button>
     </header>
-    <section class="modal-card-body">
-      <label class="label">Enter your sequence:</label>
-      <textarea class="textarea" id="sequenceInput" placeholder="e.g., ATGCGT..."></textarea>
-    </section>
+<section class="modal-card-body">
+  <div class="field">
+    <label class="label">Enter your sequence:</label>
+    <div class="control">
+      <textarea class="textarea" id="sequenceInput" placeholder="e.g., ATCGTAGC..."></textarea>
+    </div>
+  </div>
+
+  <div class="field mt-4">
+    <label class="label">Supercoiling density (σ):</label>
+    <div class="control">
+      <input class="input" type="number" id="sigmaInput" step="0.01" placeholder="e.g., -0.06">
+    </div>
+  </div>
+</section>
+
     <footer class="modal-card-foot">
       <button class="button is-success" onclick="submitSequence()">Generate</button>
       <button class="button" onclick="closeModal()">Cancel</button>
