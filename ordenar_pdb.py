@@ -42,7 +42,7 @@ def format_pdb_line(record):
 
 def sort_pdb(input_pdb_file="ADN.pdb", output_pdb_file="ADN_ordenado.pdb"):
     """
-    Sorts a PDB file by chain A, then chain B, renumbering atoms.
+    Sorts a PDB file by chain A then B, and by residue number, but preserves atom order within residues.
     """
     atom_records = []
     with open(input_pdb_file, 'r') as infile:
@@ -52,88 +52,39 @@ def sort_pdb(input_pdb_file="ADN.pdb", output_pdb_file="ADN_ordenado.pdb"):
 
     df = pd.DataFrame(atom_records)
 
-    # Separate chains
-    chain_a = df[df['chain_id'] == 'A'].copy()
-    chain_b = df[df['chain_id'] == 'B'].copy()
+    # Orden jerárquico: primero cadena, luego número de residuo, luego número original
+    df['original_order'] = range(len(df))
+    df_sorted = df.sort_values(by=['chain_id', 'residue_number', 'original_order'])
 
-    # Sort each chain by residue number
-    chain_a_sorted = chain_a.sort_values(by='residue_number')
-    chain_b_sorted = chain_b.sort_values(by='residue_number')
-
-    # Renumber atoms
-    sorted_records = []
-    atom_counter = 1
-    for index, row in chain_a_sorted.iterrows():
-        row_dict = row.to_dict()
-        row_dict['atom_number'] = atom_counter
-        sorted_records.append(row_dict)
-        atom_counter += 1
-
-    # Add TER record after chain A
-    ter_record_a = {
-        'record_type': 'TER',
-        'atom_number': atom_counter,
-        'atom_name': '',
-        'alt_loc': '',
-        'residue_name': chain_a_sorted.iloc[-1]['residue_name'] if not chain_a_sorted.empty else '',
-        'chain_id': 'A',
-        'residue_number': chain_a_sorted.iloc[-1]['residue_number'] if not chain_a_sorted.empty else 0,
-        'insertion_code': '',
-        'x_coord': 0.0, # Placeholder, not used for TER
-        'y_coord': 0.0, # Placeholder, not used for TER
-        'z_coord': 0.0, # Placeholder, not used for TER
-        'occupancy': 1.00, # Placeholder
-        'temp_factor': 0.00, # Placeholder
-        'element_symbol': '', # Placeholder
-        'charge': '' # Placeholder
-    }
-    # Only append TER if chain A had records
-    if not chain_a_sorted.empty:
-        sorted_records.append(ter_record_a)
-        atom_counter +=1
-
-
-    for index, row in chain_b_sorted.iterrows():
-        row_dict = row.to_dict()
-        row_dict['atom_number'] = atom_counter
-        sorted_records.append(row_dict)
-        atom_counter += 1
-
-    # Add TER record after chain B
-    ter_record_b = {
-        'record_type': 'TER',
-        'atom_number': atom_counter,
-        'atom_name': '',
-        'alt_loc': '',
-        'residue_name': chain_b_sorted.iloc[-1]['residue_name'] if not chain_b_sorted.empty else '',
-        'chain_id': 'B',
-        'residue_number': chain_b_sorted.iloc[-1]['residue_number'] if not chain_b_sorted.empty else 0,
-        'insertion_code': '',
-        'x_coord': 0.0,
-        'y_coord': 0.0,
-        'z_coord': 0.0,
-        'occupancy': 1.00,
-        'temp_factor': 0.00,
-        'element_symbol': '',
-        'charge': ''
-    }
-    # Only append TER if chain B had records
-    if not chain_b_sorted.empty:
-        sorted_records.append(ter_record_b)
-
+    # Renumerar átomos
+    df_sorted = df_sorted.reset_index(drop=True)
+    df_sorted['atom_number'] = df_sorted.index + 1
 
     with open(output_pdb_file, 'w') as outfile:
-        for record in sorted_records:
-            if record['record_type'] == "ATOM":
-                outfile.write(format_pdb_line(record))
-            elif record['record_type'] == "TER":
-                 # Simplified TER record for PDB standard (atom number, residue name, chain ID, residue number)
-                outfile.write("TER   {:5d}      {:3s} {:1s}{:4d}\n".format(
-                    record['atom_number'],
-                    record['residue_name'],
-                    record['chain_id'],
-                    record['residue_number']
-                ))
+        last_chain = None
+        for _, row in df_sorted.iterrows():
+            if last_chain and row['chain_id'] != last_chain:
+                # Insertar TER entre cadenas
+                ter_line = "TER   {:5d}      {:3s} {:1s}{:4d}\n".format(
+                    row['atom_number'],
+                    row['residue_name'],
+                    last_chain,
+                    row['residue_number'] - 1
+                )
+                outfile.write(ter_line)
+            outfile.write(format_pdb_line(row.to_dict()))
+            last_chain = row['chain_id']
+
+        # TER final
+        if last_chain:
+            last_res = df_sorted[df_sorted['chain_id'] == last_chain].iloc[-1]
+            outfile.write("TER   {:5d}      {:3s} {:1s}{:4d}\n".format(
+                last_res['atom_number'] + 1,
+                last_res['residue_name'],
+                last_res['chain_id'],
+                last_res['residue_number']
+            ))
+
   #  print(f"Processed PDB file written to {output_pdb_file}")
 
 if __name__ == "__main__":
