@@ -156,12 +156,14 @@ function handleFile(file) {
 
 
 function renderMolecule(pdbData) {
+    document.getElementById('viewer3d').style.display = 'block';
+
     const viewer = $3Dmol.createViewer("viewer3d", {
         backgroundColor: "black"
     });
+
     viewer.addModel(pdbData, "pdb");
 
-    // Colorear por tipo de átomo
     viewer.setStyle({}, {
         sphere: {
             scale: 0.3,
@@ -178,11 +180,10 @@ function renderMolecule(pdbData) {
         }
     });
 
-    // Agregar ejes con etiquetas
     viewer.addLabel("X", {position: {x: 20, y: 0, z: 0}, fontColor: "white"});
     viewer.addLabel("Y", {position: {x: 0, y: 20, z: 0}, fontColor: "white"});
     viewer.addLabel("Z", {position: {x: 0, y: 0, z: 20}, fontColor: "white"});
-
+    
     viewer.zoomTo();
     viewer.render();
 }
