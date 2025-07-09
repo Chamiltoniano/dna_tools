@@ -1,9 +1,9 @@
-from flask import Flask, request, render_template, jsonify, send_file
+from flask import Flask, request, render_template, jsonify, send_file, send_from_directory
 import os
 import subprocess
 from datetime import datetime
 
-# Si circularizarDNA.py está presente, lo importamos
+# Intentamos importar la función de circularización si existe
 try:
     from circularizarDNA import circularize_pdb
 except ImportError:
@@ -28,12 +28,17 @@ def upload():
         return jsonify({'success': True, 'filename': file.filename})
     return jsonify({'success': False, 'error': 'Invalid file type'}), 400
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Permite acceder al archivo .pdb subido desde el frontend para ser renderizado por 3Dmol.js"""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 @app.route('/generate', methods=['POST'])
 def generate():
     data = request.get_json()
     sequence = data.get('sequence', '').upper()
     sigma = data.get('sigma')
-    topology = data.get('topology', 'linear')  # <- Extraemos aquí
+    topology = data.get('topology', 'linear')
 
     # Validaciones
     if not sequence or not all(base in 'ATCG' for base in sequence):
@@ -43,10 +48,9 @@ def generate():
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid sigma value'}), 400
 
-    # Crear input simulado
+    # Simula input para generate_b_dna.py
     temp_input = f"{sequence}\n{sigma}\n"
 
-    # Ejecutar generate_b_dna.py
     try:
         subprocess.run(
             ['python3', 'generate_b_dna.py'],
@@ -56,23 +60,23 @@ def generate():
     except subprocess.CalledProcessError as e:
         return jsonify({'error': 'DNA generation failed', 'details': e.stderr.decode()}), 500
 
-    # Ejecutar ordenar_pdb.py
+    # Ejecuta ordenar_pdb.py
     try:
         subprocess.run(['python3', 'ordenar_pdb.py'], check=True)
     except subprocess.CalledProcessError as e:
         return jsonify({'error': 'Sorting failed', 'details': e.stderr.decode()}), 500
 
-    # Renombrar archivo con timestamp
+    # Renombra salida ordenada
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_name = f"ADN_{timestamp}.pdb"
     os.rename("ADN_ordenado.pdb", output_name)
 
-    # Circularizar si es necesario
+    # Circulariza si corresponde
     if topology == "circular":
         if circularize_pdb is None:
             return jsonify({'error': 'Circularization script not available'}), 500
         try:
-            circularize_pdb(output_name, output_name)  # Sobrescribe el archivo
+            circularize_pdb(output_name, output_name)  # sobrescribe el archivo
         except Exception as e:
             return jsonify({'error': 'Circularization failed', 'details': str(e)}), 500
 

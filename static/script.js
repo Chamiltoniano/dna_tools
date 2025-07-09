@@ -113,3 +113,76 @@ function submitSequence() {
 
     closeModal();
 }
+
+
+function handleFile(file) {
+    if (!file || !file.name.endsWith('.pdb')) {
+        status.textContent = "Please upload a valid .pdb file.";
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload');
+
+    xhr.onload = () => {
+        const response = JSON.parse(xhr.responseText);
+        if (xhr.status === 200 && response.success) {
+            status.textContent = `File "${response.filename}" uploaded successfully.`;
+            fetch(`/uploads/${response.filename}`)
+                .then(res => res.text())
+                .then(pdbData => {
+                    renderMolecule(pdbData);
+                });
+        } else {
+            status.textContent = `Upload failed: ${response.error}`;
+        }
+        progressBar.style.display = 'none';
+        progressBar.value = 0;
+    };
+
+    xhr.upload.addEventListener('progress', e => {
+        progressBar.style.display = 'block';
+        if (e.lengthComputable) {
+            const percent = (e.loaded / e.total) * 100;
+            progressBar.value = percent;
+        }
+    });
+
+    xhr.send(formData);
+}
+
+
+function renderMolecule(pdbData) {
+    const viewer = $3Dmol.createViewer("viewer3d", {
+        backgroundColor: "black"
+    });
+    viewer.addModel(pdbData, "pdb");
+
+    // Colorear por tipo de átomo
+    viewer.setStyle({}, {
+        sphere: {
+            scale: 0.3,
+            colorscheme: atom => {
+                const colorMap = {
+                    H: "white",
+                    O: "red",
+                    C: "black",
+                    N: "blue",
+                    P: "orange"
+                };
+                return colorMap[atom.elem] || "green";
+            }
+        }
+    });
+
+    // Agregar ejes con etiquetas
+    viewer.addLabel("X", {position: {x: 20, y: 0, z: 0}, fontColor: "white"});
+    viewer.addLabel("Y", {position: {x: 0, y: 20, z: 0}, fontColor: "white"});
+    viewer.addLabel("Z", {position: {x: 0, y: 0, z: 20}, fontColor: "white"});
+
+    viewer.zoomTo();
+    viewer.render();
+}
