@@ -64,6 +64,11 @@ function submitSequence() {
     const sequence = document.getElementById('sequenceInput').value.trim().toUpperCase();
     const sigma = parseFloat(document.getElementById('sigmaInput').value);
     const topology = document.querySelector('input[name="topology"]:checked').value;
+    const status = document.getElementById('generationStatus');
+    const img = document.getElementById('resultImage');
+
+    status.textContent = ''; // reset status
+    img.style.display = 'none'; // hide image if visible
 
     if (!sequence || !/^[ATCG]+$/.test(sequence)) {
         alert("Please enter a valid DNA sequence (A, T, C, G only).");
@@ -74,6 +79,8 @@ function submitSequence() {
         alert("Please enter a valid number for supercoiling density.");
         return;
     }
+
+    status.textContent = 'Generating...';
 
     fetch('/generate', {
         method: 'POST',
@@ -93,8 +100,15 @@ function submitSequence() {
         document.body.appendChild(a);
         a.click();
         a.remove();
+
+        status.textContent = 'Download ready ✔';
+        // Mostrar imagen si deseás en el futuro
+        // img.src = 'ruta/a/imagen.png';
+        // img.style.display = 'block';
     })
     .catch(error => {
+        console.error(error);
+        status.textContent = '❌ Error during generation.';
         alert("Error: " + error.message);
     });
 
