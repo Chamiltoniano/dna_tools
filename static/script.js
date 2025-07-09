@@ -68,7 +68,6 @@ function submitSequence() {
     const img = document.getElementById('resultImage');
 
     status.textContent = ''; // reset status
-    img.style.display = 'none'; // hide image if visible
 
     if (!sequence || !/^[ATCG]+$/.test(sequence)) {
         alert("Please enter a valid DNA sequence (A, T, C, G only).");

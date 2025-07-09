@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>DNA Tools</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
     <style>
         #drop-area {
@@ -18,72 +19,81 @@
     </style>
 </head>
 <body class="section">
+<div class="container">
     <h1 class="title has-text-centered">DNA - PDB Tools</h1>
-    <!-- Botón para abrir modal -->
-<div class="has-text-centered mb-4">
-  <button class="button is-primary" onclick="openModal()">Generate PDB from Sequence</button>
-</div>
 
-    <div id="drop-area">
+    <!-- Botón para abrir modal -->
+    <div class="has-text-centered mb-4">
+        <button class="button is-primary" onclick="openModal()">Generate PDB from Sequence</button>
+    </div>
+
+    <!-- Estado fuera de la modal -->
+    <p id="generationStatus" class="has-text-centered has-text-info has-text-weight-semibold mt-2"></p>
+
+    <!-- Drag & Drop -->
+    <div id="drop-area" class="box">
         <p>Drag & Drop a .pdb file here</p>
         <input type="file" id="fileElem" accept=".pdb" style="display:none;">
-        <button class="button is-info" onclick="document.getElementById('fileElem').click()">Choose File</button>
+        <button class="button is-info mt-2" onclick="document.getElementById('fileElem').click()">Choose File</button>
     </div>
+
     <progress id="progress-bar" class="progress is-info" value="0" max="100" style="display:none;"></progress>
-    <p id="status"></p>
+    <p id="status" class="has-text-centered mt-2"></p>
 
-    <script src="/static/script.js"></script>
+    <!-- Imagen fija -->
+    <div class="has-text-centered mt-6">
+        <img id="resultImage" src="{{ url_for('static', filename='image.png') }}"
+             alt="Result preview"
+             style="max-width: 100%; height: auto; object-fit: contain;">
+    </div>
+</div>
 
-    <!-- Modal -->
+<!-- Modal -->
 <div class="modal" id="sequenceModal">
-  <div class="modal-background" onclick="closeModal()"></div>
-  <div class="modal-card">
-    <header class="modal-card-head">
-      <p class="modal-card-title">Generate PDB from Sequence</p>
-      <button class="delete" aria-label="close" onclick="closeModal()"></button>
-      <p id="generationStatus" class="has-text-info has-text-weight-semibold mt-2" style="text-align:center;"></p>
-    </header>
-<section class="modal-card-body">
-  <div class="field">
-    <label class="label">Enter your sequence:</label>
-    <div class="control">
-      <textarea class="textarea" id="sequenceInput" placeholder="e.g., ATCGTAGC..."></textarea>
+    <div class="modal-background" onclick="closeModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Generate PDB from Sequence</p>
+            <button class="delete" aria-label="close" onclick="closeModal()"></button>
+        </header>
+
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">Enter your sequence:</label>
+                <div class="control">
+                    <textarea class="textarea" id="sequenceInput" placeholder="e.g., ATCGTAGC..."></textarea>
+                </div>
+            </div>
+
+            <div class="field mt-4">
+                <label class="label">Supercoiling density (σ):</label>
+                <div class="control">
+                    <input class="input" type="number" id="sigmaInput" step="0.01" placeholder="e.g., -0.06">
+                </div>
+            </div>
+
+            <div class="field mt-4">
+                <label class="label">Topology:</label>
+                <div class="control">
+                    <label class="radio">
+                        <input type="radio" name="topology" value="linear" checked>
+                        Linear
+                    </label>
+                    <label class="radio">
+                        <input type="radio" name="topology" value="circular">
+                        Circular
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <footer class="modal-card-foot">
+            <button class="button is-success" onclick="submitSequence()">Generate</button>
+            <button class="button" onclick="closeModal()">Cancel</button>
+        </footer>
     </div>
-  </div>
-
-  <div class="field mt-4">
-    <label class="label">Supercoiling density (σ):</label>
-    <div class="control">
-      <input class="input" type="number" id="sigmaInput" step="0.01" placeholder="e.g., -0.06">
-    </div>
-  </div>
-
-  <div class="field mt-4">
-  <label class="label">Topology:</label>
-  <div class="control">
-    <label class="radio">
-      <input type="radio" name="topology" value="linear" checked>
-      Linear
-    </label>
-    <label class="radio">
-      <input type="radio" name="topology" value="circular">
-      Circular
-    </label>
-  </div>
 </div>
 
-</section>
-
-    <footer class="modal-card-foot">
-      <button class="button is-success" onclick="submitSequence()">Generate</button>
-      <button class="button" onclick="closeModal()">Cancel</button>
-    </footer>
-  </div>
-</div>
-<progress id="progress-bar" class="progress is-info" value="0" max="100" style="display:none;"></progress>
-<p id="status"></p>
-<div class="has-text-centered mt-6">
-  <img id="resultImage" src="{{ url_for('static', filename='image.png') }}" alt="Result preview" style="max-width: 400px; height: 250px; object-fit: contain;">
-</div>
+<script src="/static/script.js"></script>
 </body>
 </html>
