@@ -29,6 +29,22 @@ function handleFile(file) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/upload');
 
+    xhr.onload = () => {
+        const response = JSON.parse(xhr.responseText);
+        if (xhr.status === 200 && response.success) {
+            status.textContent = `File "${response.filename}" uploaded successfully.`;
+            fetch(`/uploads/${response.filename}`)
+                .then(res => res.text())
+                .then(pdbData => {
+                    renderMolecule(pdbData);
+                });
+        } else {
+            status.textContent = `Upload failed: ${response.error}`;
+        }
+        progressBar.style.display = 'none';
+        progressBar.value = 0;
+    };
+
     xhr.upload.addEventListener('progress', e => {
         progressBar.style.display = 'block';
         if (e.lengthComputable) {
@@ -37,20 +53,8 @@ function handleFile(file) {
         }
     });
 
-    xhr.onload = () => {
-        const response = JSON.parse(xhr.responseText);
-        if (xhr.status === 200 && response.success) {
-            status.textContent = `File "${response.filename}" uploaded successfully.`;
-        } else {
-            status.textContent = `Upload failed: ${response.error}`;
-        }
-        progressBar.style.display = 'none';
-        progressBar.value = 0;
-    };
-
     xhr.send(formData);
 }
-
 
 function openModal() {
     document.getElementById('sequenceModal').classList.add('is-active');
@@ -67,10 +71,10 @@ function submitSequence() {
     const status = document.getElementById('generationStatus');
     const img = document.getElementById('resultImage');
 
-    status.textContent = ''; // reset status
+    status.textContent = '';
 
     if (!sequence || !/^[ATCG]+$/.test(sequence)) {
-        alert("Please enter a valid DNA sequence (A, T, C, G only).");
+        alert("Please enter a valid DNA sequence (A, T, C, G only).”);
         return;
     }
 
@@ -101,9 +105,6 @@ function submitSequence() {
         a.remove();
 
         status.textContent = 'Download ready ✔';
-        // Mostrar imagen si deseás en el futuro
-        // img.src = 'ruta/a/imagen.png';
-        // img.style.display = 'block';
     })
     .catch(error => {
         console.error(error);
@@ -113,47 +114,6 @@ function submitSequence() {
 
     closeModal();
 }
-
-
-function handleFile(file) {
-    if (!file || !file.name.endsWith('.pdb')) {
-        status.textContent = "Please upload a valid .pdb file.";
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/upload');
-
-    xhr.onload = () => {
-        const response = JSON.parse(xhr.responseText);
-        if (xhr.status === 200 && response.success) {
-            status.textContent = `File "${response.filename}" uploaded successfully.`;
-            fetch(`/uploads/${response.filename}`)
-                .then(res => res.text())
-                .then(pdbData => {
-                    renderMolecule(pdbData);
-                });
-        } else {
-            status.textContent = `Upload failed: ${response.error}`;
-        }
-        progressBar.style.display = 'none';
-        progressBar.value = 0;
-    };
-
-    xhr.upload.addEventListener('progress', e => {
-        progressBar.style.display = 'block';
-        if (e.lengthComputable) {
-            const percent = (e.loaded / e.total) * 100;
-            progressBar.value = percent;
-        }
-    });
-
-    xhr.send(formData);
-}
-
 
 function renderMolecule(pdbData) {
     document.getElementById('viewer3d').style.display = 'block';
@@ -183,7 +143,40 @@ function renderMolecule(pdbData) {
     viewer.addLabel("X", {position: {x: 20, y: 0, z: 0}, fontColor: "white"});
     viewer.addLabel("Y", {position: {x: 0, y: 20, z: 0}, fontColor: "white"});
     viewer.addLabel("Z", {position: {x: 0, y: 0, z: 20}, fontColor: "white"});
-    
+
     viewer.zoomTo();
     viewer.render();
+
+    // Graficar puentes
+    fetch('/hbond-data')
+        .then(response => response.json())
+        .then(data => drawHbondChart(data))
+        .catch(err => console.error('No hydrogen bond data:', err));
+}
+
+function drawHbondChart(data) {
+    const layout = {
+        title: 'Hydrogen Bonds Between Base Pairs',
+        xaxis: {
+            title: 'Base Pair',
+            tickangle: -45
+        },
+        yaxis: {
+            title: 'H-bond Present',
+            tickvals: [0, 1],
+            ticktext: ['No', 'Yes']
+        },
+        margin: { t: 50, b: 150 }
+    };
+
+    const trace = {
+        x: data.pairs,
+        y: data.bonds,
+        type: 'bar',
+        marker: {
+            color: data.bonds.map(val => val ? 'green' : 'red')
+        }
+    };
+
+    Plotly.newPlot('hbond-plot', [trace], layout);
 }
