@@ -2,7 +2,6 @@ from flask import Flask, request, render_template, jsonify, send_file, send_from
 import os
 import subprocess
 from datetime import datetime
-import json
 
 # Intentamos importar la función de circularización si existe
 try:
@@ -67,12 +66,6 @@ def generate():
     except subprocess.CalledProcessError as e:
         return jsonify({'error': 'Sorting failed', 'details': e.stderr.decode()}), 500
 
-    # Ejecuta buscaPuentes.py
-    try:
-        subprocess.run(['python3', 'buscaPuentes.py'], check=True)
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': 'H-bond detection failed', 'details': e.stderr.decode()}), 500
-
     # Renombra salida ordenada
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_name = f"ADN_{timestamp}.pdb"
@@ -88,15 +81,6 @@ def generate():
             return jsonify({'error': 'Circularization failed', 'details': str(e)}), 500
 
     return send_file(output_name, as_attachment=True)
-
-@app.route('/hbond-data')
-def hbond_data():
-    try:
-        with open('puentes.json', 'r') as f:
-            data = json.load(f)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({'error': 'Cannot read hbond data', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
