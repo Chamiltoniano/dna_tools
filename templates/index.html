@@ -13,24 +13,6 @@
             color: #4a4a4a;
             margin-top: 30px;
         }
-
-        #viewer3d {
-            display: none;
-            width: 100%;
-            height: 500px;
-            margin-top: 30px;
-            position: relative;
-            z-index: 0;
-            overflow: hidden;
-        }
-
-        #resultImage {
-            max-width: 33%;
-            height: auto;
-            object-fit: contain;
-            margin-top: 20px;
-        }
-
         .progress {
             margin-top: 20px;
         }
@@ -45,29 +27,27 @@
         <button class="button is-primary" onclick="openModal()">Generate PDB from Sequence</button>
     </div>
 
-    <!-- Estado de generación -->
+    <!-- Estado fuera de la modal -->
     <p id="generationStatus" class="has-text-centered has-text-info has-text-weight-semibold mt-2"></p>
 
     <!-- Drag & Drop -->
     <div id="drop-area" class="box">
-        <p><strong>Analyze your DNA .PDB file!</strong></p>
-        <p><strong>This section is not ready yet :-). Estoy cansado jefe</strong></p>
+    <p><strong>Analyze your DNA .PDB file!</strong></p>
+    <p><strong>This section is not ready yet :-). Estoy cansado jefe</strong></p>
         <p>Drag & Drop a .pdb file here</p>
         <input type="file" id="fileElem" accept=".pdb" style="display:none;">
         <button class="button is-info mt-2" onclick="document.getElementById('fileElem').click()">Choose File</button>
     </div>
+    <div id="viewer3d" style="width: 100%; height: 500px; margin-top: 30px; display: none;"></div>
 
-    <!-- Viewer 3D -->
-    <div id="viewer3d"></div>
-
-    <!-- Barra de progreso -->
     <progress id="progress-bar" class="progress is-info" value="0" max="100" style="display:none;"></progress>
     <p id="status" class="has-text-centered mt-2"></p>
 
     <!-- Imagen fija -->
     <div class="has-text-centered mt-6">
-        <img id="resultImage" src="{{ url_for('static', filename='image.png') }}"
-             alt="Result preview">
+<img id="resultImage" src="{{ url_for('static', filename='image.png') }}"
+     alt="Result preview"
+     style="max-width: 25%; height: auto; object-fit: contain;">
     </div>
 </div>
 
@@ -117,7 +97,7 @@
     </div>
 </div>
 
-<!-- Scripts -->
+<script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
 <script src="/static/script.js"></script>
 </body>
 </html>
