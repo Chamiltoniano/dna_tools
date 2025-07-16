@@ -12,9 +12,12 @@ except ImportError:
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
+OUTPUT_FOLDER = 'output'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
 @app.route('/')
 def index():
@@ -26,12 +29,27 @@ def upload():
     if file and file.filename.endswith('.pdb'):
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filepath)
+
+        # Ejecutamos buscaPuentes.py sobre el archivo subido
+        try:
+            subprocess.run(['python3', 'buscaPuentes.py', filepath], check=True)
+        except subprocess.CalledProcessError as e:
+            return jsonify({'success': False, 'error': 'Hydrogen bond analysis failed', 'details': str(e)}), 500
+
         return jsonify({'success': True, 'filename': file.filename})
+
     return jsonify({'success': False, 'error': 'Invalid file type'}), 400
+
+@app.route('/hbond-json/<filename>')
+def hbond_json(filename):
+    json_file = os.path.splitext(filename)[0] + '_hbonds.json'
+    json_path = os.path.join(app.config['OUTPUT_FOLDER'], json_file)
+    if os.path.exists(json_path):
+        return send_from_directory(app.config['OUTPUT_FOLDER'], json_file)
+    return jsonify({'error': 'No hydrogen bond data found'}), 404
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    """Permite acceder al archivo .pdb subido desde el frontend para ser renderizado por 3Dmol.js"""
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/generate', methods=['POST'])
@@ -41,7 +59,6 @@ def generate():
     sigma = data.get('sigma')
     topology = data.get('topology', 'linear')
 
-    # Validaciones
     if not sequence or not all(base in 'ATCG' for base in sequence):
         return jsonify({'error': 'Invalid DNA sequence'}), 400
     try:
@@ -49,54 +66,25 @@ def generate():
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid sigma value'}), 400
 
-    # Simula input para generate_b_dna.py
     temp_input = f"{sequence}\n{sigma}\n"
 
     try:
-        subprocess.run(
-            ['python3', 'generate_b_dna.py'],
-            input=temp_input.encode(),
-            check=True
-        )
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': 'DNA generation failed', 'details': e.stderr.decode()}), 500
-
-    # Ejecuta ordenar_pdb.py
-    try:
+        subprocess.run(['python3', 'generate_b_dna.py'], input=temp_input.encode(), check=True)
         subprocess.run(['python3', 'ordenar_pdb.py'], check=True)
     except subprocess.CalledProcessError as e:
-        return jsonify({'error': 'Sorting failed', 'details': e.stderr.decode()}), 500
+        return jsonify({'error': 'DNA generation failed', 'details': str(e)}), 500
 
-    # Ejecuta buscaPuentes.py
-    try:
-        subprocess.run(['python3', 'buscaPuentes.py'], check=True)
-    except subprocess.CalledProcessError as e:
-        return jsonify({'error': 'H-bond detection failed', 'details': e.stderr.decode()}), 500
-
-    # Renombra salida ordenada
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_name = f"ADN_{timestamp}.pdb"
     os.rename("ADN_ordenado.pdb", output_name)
 
-    # Circulariza si corresponde
-    if topology == "circular":
-        if circularize_pdb is None:
-            return jsonify({'error': 'Circularization script not available'}), 500
+    if topology == "circular" and circularize_pdb is not None:
         try:
-            circularize_pdb(output_name, output_name)  # sobrescribe el archivo
+            circularize_pdb(output_name, output_name)
         except Exception as e:
             return jsonify({'error': 'Circularization failed', 'details': str(e)}), 500
 
     return send_file(output_name, as_attachment=True)
-
-@app.route('/hbond-data')
-def hbond_data():
-    try:
-        with open('puentes.json', 'r') as f:
-            data = json.load(f)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({'error': 'Cannot read hbond data', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
