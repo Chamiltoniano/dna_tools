@@ -16,6 +16,15 @@
         .progress {
             margin-top: 20px;
         }
+        #viewer3d {
+    display: none;
+    width: 100%;
+    height: 500px;
+    margin: 20px auto;
+    background-color: black;
+    border: 1px solid #ccc;
+}
+
     </style>
 </head>
 <body class="section">
@@ -33,7 +42,7 @@
     <!-- Drag & Drop -->
     <div id="drop-area" class="box">
     <p><strong>Analyze your DNA .PDB file!</strong></p>
-    <p><strong>This section is not ready yet :-). Estoy cansado jefe</strong></p>
+    <p><strong>This section is not ready yet :-)..</strong></p>
         <p>Drag & Drop a .pdb file here</p>
         <input type="file" id="fileElem" accept=".pdb" style="display:none;">
         <button class="button is-info mt-2" onclick="document.getElementById('fileElem').click()">Choose File</button>
