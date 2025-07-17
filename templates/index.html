@@ -5,6 +5,7 @@
     <title>DNA Tools</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
     <style>
         #drop-area {
             border: 2px dashed #00d1b2;
@@ -13,18 +14,25 @@
             color: #4a4a4a;
             margin-top: 30px;
         }
+
+        #viewer3d {
+            display: none;
+            width: 100%;
+            height: 500px;
+            margin: 20px auto;
+            background-color: black;
+            border: 1px solid #ccc;
+        }
+
         .progress {
             margin-top: 20px;
         }
-        #viewer3d {
-    display: none;
-    width: 100%;
-    height: 500px;
-    margin: 20px auto;
-    background-color: black;
-    border: 1px solid #ccc;
-}
 
+        #resultImage {
+            max-width: 50%;
+            height: auto;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body class="section">
@@ -41,22 +49,24 @@
 
     <!-- Drag & Drop -->
     <div id="drop-area" class="box">
-    <p><strong>Analyze your DNA .PDB file!</strong></p>
-    <p><strong>This section is not ready yet :-)..</strong></p>
+        <p><strong>Analyze your DNA .PDB file!</strong></p>
+        <p><strong>This section is not ready yet :-). Estoy cansado jefe</strong></p>
         <p>Drag & Drop a .pdb file here</p>
         <input type="file" id="fileElem" accept=".pdb" style="display:none;">
         <button class="button is-info mt-2" onclick="document.getElementById('fileElem').click()">Choose File</button>
     </div>
-    <div id="viewer3d" style="width: 100%; height: 500px; margin-top: 30px; display: none;"></div>
 
+    <!-- Viewer 3D -->
+    <div id="viewer3d"></div>
+
+    <!-- Barra de progreso -->
     <progress id="progress-bar" class="progress is-info" value="0" max="100" style="display:none;"></progress>
     <p id="status" class="has-text-centered mt-2"></p>
 
     <!-- Imagen fija -->
     <div class="has-text-centered mt-6">
-<img id="resultImage" src="{{ url_for('static', filename='image.png') }}"
-     alt="Result preview"
-     style="max-width: 25%; height: auto; object-fit: contain;">
+        <img id="resultImage" src="{{ url_for('static', filename='image.png') }}"
+             alt="Result preview">
     </div>
 </div>
 
@@ -106,7 +116,6 @@
     </div>
 </div>
 
-<script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
 <script src="/static/script.js"></script>
 </body>
 </html>
