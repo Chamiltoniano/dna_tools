@@ -22,7 +22,7 @@ def parse_pdb_line(line):
 
 def format_pdb_line(record):
     """Formats a PDB ATOM record dictionary back into a PDB line."""
-    return "{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f} {:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}\n".format(
+    return "{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}\n".format(
         record['record_type'],
         record['atom_number'],
         record['atom_name'],
@@ -41,9 +41,6 @@ def format_pdb_line(record):
     )
 
 def sort_pdb(input_pdb_file="ADN.pdb", output_pdb_file="ADN_ordenado.pdb"):
-    """
-    Sorts a PDB file by chain A then B, and by residue number, but preserves atom order within residues.
-    """
     atom_records = []
     with open(input_pdb_file, 'r') as infile:
         for line in infile:
@@ -52,55 +49,85 @@ def sort_pdb(input_pdb_file="ADN.pdb", output_pdb_file="ADN_ordenado.pdb"):
 
     df = pd.DataFrame(atom_records)
 
-    # Orden jerárquico: primero cadena, luego número de residuo, luego número original
-    df['original_order'] = range(len(df))
-    df_sorted = df.sort_values(by=['chain_id', 'residue_number', 'original_order'])
+    # Separar las cadenas
+    chain_a = df[df['chain_id'] == 'A'].copy()
+    chain_b = df[df['chain_id'] == 'B'].copy()
 
-    # Renumerar átomos
-    df_sorted = df_sorted.reset_index(drop=True)
-    df_sorted['atom_number'] = df_sorted.index + 1
+    # Ordenar cada una por número de residuo
+    chain_a_sorted = chain_a.sort_values(by='residue_number')
+    chain_b_sorted = chain_b.sort_values(by='residue_number')
+
+    # Calcular el offset para la cadena B
+    max_resid_a = chain_a_sorted['residue_number'].max() if not chain_a_sorted.empty else 0
+    chain_b_sorted['residue_number'] += max_resid_a
+
+    # Renumerar los átomos
+    sorted_records = []
+    atom_counter = 1
+    for _, row in chain_a_sorted.iterrows():
+        row_dict = row.to_dict()
+        row_dict['atom_number'] = atom_counter
+        sorted_records.append(row_dict)
+        atom_counter += 1
+
+    # TER después de A
+    if not chain_a_sorted.empty:
+        sorted_records.append({
+            'record_type': 'TER',
+            'atom_number': atom_counter,
+            'atom_name': '',
+            'alt_loc': '',
+            'residue_name': chain_a_sorted.iloc[-1]['residue_name'],
+            'chain_id': 'A',
+            'residue_number': chain_a_sorted.iloc[-1]['residue_number'],
+            'insertion_code': '',
+            'x_coord': 0.0,
+            'y_coord': 0.0,
+            'z_coord': 0.0,
+            'occupancy': 1.00,
+            'temp_factor': 0.00,
+            'element_symbol': '',
+            'charge': ''
+        })
+        atom_counter += 1
+
+    for _, row in chain_b_sorted.iterrows():
+        row_dict = row.to_dict()
+        row_dict['atom_number'] = atom_counter
+        sorted_records.append(row_dict)
+        atom_counter += 1
+
+    # TER después de B
+    if not chain_b_sorted.empty:
+        sorted_records.append({
+            'record_type': 'TER',
+            'atom_number': atom_counter,
+            'atom_name': '',
+            'alt_loc': '',
+            'residue_name': chain_b_sorted.iloc[-1]['residue_name'],
+            'chain_id': 'B',
+            'residue_number': chain_b_sorted.iloc[-1]['residue_number'],
+            'insertion_code': '',
+            'x_coord': 0.0,
+            'y_coord': 0.0,
+            'z_coord': 0.0,
+            'occupancy': 1.00,
+            'temp_factor': 0.00,
+            'element_symbol': '',
+            'charge': ''
+        })
 
     with open(output_pdb_file, 'w') as outfile:
-        last_chain = None
-        for _, row in df_sorted.iterrows():
-            if last_chain and row['chain_id'] != last_chain:
-                # Insertar TER entre cadenas
-                ter_line = "TER   {:5d}      {:3s} {:1s}{:4d}\n".format(
-                    row['atom_number'],
-                    row['residue_name'],
-                    last_chain,
-                    row['residue_number'] - 1
-                )
-                outfile.write(ter_line)
-            outfile.write(format_pdb_line(row.to_dict()))
-            last_chain = row['chain_id']
-
-        # TER final
-        if last_chain:
-            last_res = df_sorted[df_sorted['chain_id'] == last_chain].iloc[-1]
-            outfile.write("TER   {:5d}      {:3s} {:1s}{:4d}\n".format(
-                last_res['atom_number'] + 1,
-                last_res['residue_name'],
-                last_res['chain_id'],
-                last_res['residue_number']
-            ))
-
-  #  print(f"Processed PDB file written to {output_pdb_file}")
+        for record in sorted_records:
+            if record['record_type'] == "ATOM":
+                outfile.write(format_pdb_line(record))
+            elif record['record_type'] == "TER":
+                outfile.write("TER   {:5d}      {:3s} {:1s}{:4d}\n".format(
+                    record['atom_number'],
+                    record['residue_name'],
+                    record['chain_id'],
+                    record['residue_number']
+                ))
 
 if __name__ == "__main__":
-    # Create a dummy ADN.pdb for testing if it doesn't exist
-    try:
-        with open("ADN.pdb", "r") as f:
-            pass
-    except FileNotFoundError:
-        print("ADN.pdb not found, creating a dummy file for testing.")
-        dummy_pdb_content = """\
-ATOM      1 P    DA  A   1       4.728  -7.626   1.239  1.00  0.00           P
-ATOM     33 P    DT  B  83      -5.792   6.854   5.521  1.00  0.00           P
-ATOM     65 P    DT  A   2       8.307  -3.391   4.639  1.00  0.00           P
-ATOM     97 P    DA  B  82      -8.715   2.141   8.921  1.00  0.00           P
-"""
-        with open("ADN.pdb", "w") as f:
-            f.write(dummy_pdb_content)
-
     sort_pdb()
