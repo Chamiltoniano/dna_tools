@@ -49,8 +49,8 @@
 
     <!-- Drag & Drop -->
     <div id="drop-area" class="box">
-        <p><strong>Analyze your DNA .PDB file!</strong></p>
-        <p><strong>This section is not ready yet :-). Estoy cansado jefe</strong></p>
+        <p><strong>Upload your .PDB file!</strong></p>
+        <p><strong>You will view your molecule</strong></p>
         <p>Drag & Drop a .pdb file here</p>
         <input type="file" id="fileElem" accept=".pdb" style="display:none;">
         <button class="button is-info mt-2" onclick="document.getElementById('fileElem').click()">Choose File</button>
@@ -64,10 +64,10 @@
     <p id="status" class="has-text-centered mt-2"></p>
 
     <!-- Imagen fija -->
-    <div class="has-text-centered mt-6">
+ <!--   <div class="has-text-centered mt-6">
         <img id="resultImage" src="{{ url_for('static', filename='image.png') }}"
              alt="Result preview">
-    </div>
+    </div>  -->
 </div>
 
 <!-- Modal -->
