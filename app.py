@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, jsonify, send_file, send_from
 import os
 import subprocess
 from datetime import datetime
+from pcoords_extraction import extract_and_store_pcoord_sets
 
 # Intentamos importar la función de circularización si existe
 try:
@@ -25,6 +26,14 @@ def upload():
     if file and file.filename.endswith('.pdb'):
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filepath)
+
+        try:
+            out_json = extract_and_store_pcoord_sets(filepath)
+            app.logger.info(f"P coords guardadas en {out_json}")
+        except Exception as e:
+            # No rompemos el flujo de visualización si falla la extracción
+            app.logger.warning(f"Extracción P falló para {filepath}: {e}")
+        
         return jsonify({'success': True, 'filename': file.filename})
     return jsonify({'success': False, 'error': 'Invalid file type'}), 400
 
