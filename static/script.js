@@ -36,7 +36,7 @@ function handleFile(file) {
             fetch(`/uploads/${response.filename}`)
                 .then(res => res.text())
                 .then(pdbData => {
-                    renderMolecule(pdbData);
+                    renderMolecule(pdbData, response.filename);
                 });
         } else {
             status.textContent = `Upload failed: ${response.error}`;
@@ -115,7 +115,7 @@ function submitSequence() {
     closeModal();
 }
 
-function renderMolecule(pdbData) {
+function renderMolecule(pdbData, filename) {
     const viewerDiv = document.getElementById('viewer3d');
     const scrollY = window.scrollY;
 
@@ -158,5 +158,25 @@ function renderMolecule(pdbData) {
         // Fuerza alto y margen para evitar scrolls extra o zonas blancas
         viewerDiv.style.height = "500px";
         viewerDiv.style.marginTop = "30px";
+
+
+       const out = document.getElementById('rg-output');
+       if (out && filename) {
+         out.textContent = 'Computing radius of gyration...';
+         fetch(`/pcoords/rg/${encodeURIComponent(filename)}`)
+           .then(res => res.json())
+           .then(data => {
+             if (data && data.success) {
+               const r = Number(data.r).toFixed(4);
+               const cm = (data.CM || [0,0,0]).map(v => Number(v).toFixed(4));
+               out.textContent = `Radius of gyration (A): ${r}   |   CM: (${cm[0]}, ${cm[1]}, ${cm[2]})   |   n = ${data.nTotal}`;
+             } else {
+               out.textContent = 'Could not compute radius of gyration.';
+             }
+           })
+           .catch(() => {
+             out.textContent = 'Could not compute radius of gyration.';
+           });
+       }
     });
 }
